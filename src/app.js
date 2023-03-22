@@ -2,80 +2,53 @@
  * @Author: Patrick-Jun 
  * @Date: 2021-01-31 19:21:01 
  * @Last Modified by: Patrick-Jun
- * @Last Modified time: 2021-12-07 21:10:46
+ * @Last Modified time: 2021-12-01 12:04:31
  */
 
 "use strict";
 // 校验网址更新频率
 const updateHours = 24;
-// 默认网址配置
-const websitesDefault = [
+// 需要校验的网址配置
+const websites = getWebsites() || [
   {
-    name: '知乎',
-    domain: 'link.zhihu.com',
-    exactMatch: '',
-    targetKey: 'target'
+    name: '知乎', // 站点名称
+    domain: 'link.zhihu.com', // 站点域名
+    exactMatch: '', // 精确校验
+    targetKey: 'target', // 目标url字段
   },
   {
     name: 'CSDN',
     domain: 'link.csdn.net',
     exactMatch: '',
-    targetKey: 'target'
+    targetKey: 'target',
   },
   {
     name: '简书',
     domain: 'www.jianshu.com',
     exactMatch: 'www.jianshu.com/go-wild?',
-    targetKey: 'url'
+    targetKey: 'url',
   },
   {
     name: 'QQ邮箱',
     domain: 'mail.qq.com',
     exactMatch: 'mail.qq.com/cgi-bin/readtemplate?t=safety&check=false',
-    targetKey: 'gourl'
+    targetKey: 'gourl',
   },
   {
     name: 'segmentfault',
     domain: 'link.segmentfault.com',
     exactMatch: '',
-    targetKey: 'url'
+    targetKey: 'url',
   },
   {
     name: '掘金',
     domain: 'link.juejin.cn',
     exactMatch: '',
-    targetKey: 'target'
+    targetKey: 'target',
   },
-  {
-    name: '微信开放社区',
-    domain: 'developers.weixin.qq.com',
-    exactMatch: 'developers.weixin.qq.com/community/middlepage/href',
-    targetKey: 'href'
-  },
-  {
-    name: '腾讯文档',
-    domain: 'docs.qq.com',
-    exactMatch: 'https://docs.qq.com/scenario/link.html',
-    targetKey: 'url'
-  }
 ];
 
-// 需要校验的网址配置
-let websites = websitesDefault;
-
-// 运行
-try {
-  chrome.storage.local.get(['__chrome_ctv_websites'], (result) => {
-    websites = JSON.parse(result['__chrome_ctv_websites'] || '[]');
-    run();
-  });
-} catch (error) {
-  websites = websitesDefault;
-  run();
-}
-
-// 更新匹配站点
-updateWebsites();
+run();
 
 /**
  * @description 执行
@@ -133,10 +106,18 @@ function getTargetUrl(fullUrl, matchParams) {
 }
 
 /**
- * @description 更新网站列表
+ * @description 获取网站列表
  * @returns {*} 网站列表
  */
-function updateWebsites() {
+function getWebsites() {
+  let websites = [];
+  try {
+    chrome.storage.local.get(['__chrome_ctv_websites'], (result) => {
+      websites = JSON.parse(result['__chrome_ctv_websites']);
+    });
+  } catch (error) {
+    websites = [];
+  }
   // 从github更新website
   try {
     chrome.storage.local.get(['__chrome_ctv_update'], (result) => {
@@ -144,7 +125,7 @@ function updateWebsites() {
       const update = result['__chrome_ctv_update'];
       if (!update || now - update > updateHours * 3600000) {
         const protocol = location.protocol;
-        get(`${protocol}//v1.hot.1zdz.cn/github/Chrome-ContinueToVisit/main/src/websites.json`, (res) => {
+        get(`${protocol}//v1.hot.isdz.cn/github/Chrome-ContinueToVisit/main/src/websites.json`, (res) => {
           chrome.storage.local.set({ '__chrome_ctv_websites': JSON.stringify(res || []) });
           chrome.storage.local.set({ '__chrome_ctv_update': now });
         });
@@ -153,6 +134,7 @@ function updateWebsites() {
   } catch (error) {
     console.error(error);
   }
+  return websites && websites.length > 0 ? websites : null;
 }
 
 /**
